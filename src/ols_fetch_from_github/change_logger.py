@@ -128,7 +128,7 @@ class ChangeLogger:
             formatted['added'].append({
                 'obo_id': term.get('id', 'Unknown'),
                 'label': term.get('name', 'Unknown'),
-                'description': term.get('def', 'No description'),
+                'description': term.get('comment', 'No description'),
                 'parents': self._get_parent_info(term),
                 'change_type': 'add'
             })
@@ -138,7 +138,7 @@ class ChangeLogger:
             formatted['deleted'].append({
                 'obo_id': term.get('id', 'Unknown'),
                 'label': term.get('name', 'Unknown'),
-                'description': term.get('def', 'No description'),
+                'description': term.get('comment', 'No description'),
                 'parents': self._get_parent_info(term),
                 'change_type': 'delete'
             })
@@ -152,13 +152,13 @@ class ChangeLogger:
             formatted['updated'].append({
                 'obo_id': term_update['id'],
                 'label': new_term.get('name', old_term.get('name', 'Unknown')),
-                'description': new_term.get('def', old_term.get('def', 'No description')),
+                'description': new_term.get('comment', old_term.get('comment', 'No description')),
                 'parents': self._get_parent_info(new_term),
                 'change_type': 'update',
                 'field_changes': field_changes,
                 'old_values': {
                     'label': old_term.get('name', 'Unknown'),
-                    'description': old_term.get('def', 'No description'),
+                    'description': old_term.get('comment', 'No description'),
                     'parents': self._get_parent_info(old_term)
                 }
             })
@@ -190,7 +190,7 @@ class ChangeLogger:
             formatted['added'].append({
                 'obo_id': typedef.get('id', 'Unknown'),
                 'label': typedef.get('name', 'Unknown'),
-                'description': typedef.get('def', 'No description'),
+                'description': typedef.get('comment', 'No description'),
                 'change_type': 'add'
             })
         
@@ -199,7 +199,7 @@ class ChangeLogger:
             formatted['deleted'].append({
                 'obo_id': typedef.get('id', 'Unknown'),
                 'label': typedef.get('name', 'Unknown'),
-                'description': typedef.get('def', 'No description'),
+                'description': typedef.get('comment', 'No description'),
                 'change_type': 'delete'
             })
         
@@ -212,12 +212,12 @@ class ChangeLogger:
             formatted['updated'].append({
                 'obo_id': typedef_update['id'],
                 'label': new_typedef.get('name', old_typedef.get('name', 'Unknown')),
-                'description': new_typedef.get('def', old_typedef.get('def', 'No description')),
+                'description': new_typedef.get('comment', old_typedef.get('comment', 'No description')),
                 'change_type': 'update',
                 'field_changes': field_changes,
                 'old_values': {
                     'label': old_typedef.get('name', 'Unknown'),
-                    'description': old_typedef.get('def', 'No description')
+                    'description': old_typedef.get('comment', 'No description')
                 }
             })
         

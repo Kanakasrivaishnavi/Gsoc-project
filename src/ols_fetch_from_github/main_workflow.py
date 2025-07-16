@@ -1,8 +1,9 @@
 
 import os
 import json
-from github_file_updater import GitHubFileUpdater
-from user_file_processor import UserFileProcessor
+from .github_file_updater import GitHubFileUpdater
+from .user_file_processor import UserFileProcessor
+from .config import Config
 
 
 class SBOWorkflowManager:
@@ -40,14 +41,11 @@ class SBOWorkflowManager:
         self._ensure_localfiles_dir()
         os.chdir(self.localfiles_dir)
         
-        self.github_updater = GitHubFileUpdater(
-            url="https://raw.githubusercontent.com/EBI-BioModels/SBO/refs/heads/master/SBO_OBO.obo",
-            repo_owner="EBI-BioModels",
-            repo_name="SBO",
-            file_path="SBO_OBO.obo",
-            branch="master"
-        )
-        self.user_processor = UserFileProcessor()
+        # Initialize shared config
+        self.config = Config()
+        
+        self.github_updater = GitHubFileUpdater(self.config)
+        self.user_processor = UserFileProcessor(self.config)
     
     def run_workflow(self):
         """
@@ -66,12 +64,12 @@ class SBOWorkflowManager:
         print("🚀 Starting SBO file workflow")
         print("=" * 80)
         
-        # Check for updates
+        # Check for updates and auto-download if found
         print("\n🔍 Checking for remote file updates...")
-        has_updates = self._check_for_updates()
+        update_info = self._check_for_updates()
         
-        if has_updates:
-            self._handle_updates_available()
+        if update_info:
+            self._handle_updates_available(update_info)
         else:
             self._handle_no_updates()
         
@@ -80,57 +78,95 @@ class SBOWorkflowManager:
     
     def _check_for_updates(self):
         """
-        Check if updates are available
+        Check if updates are available and auto-download if found
         
         Description:
             Queries the GitHub repository to determine if the SBO ontology file
-            has been updated since the last local download.
+            has been updated since the last local download. If updates are found,
+            automatically downloads them to temporary location for user review.
         
         Input:
             None
         
         Output:
-            bool: True if updates are available, False otherwise
+            dict or None: Update information with temp files if updates found, None otherwise
         """
         try:
             status = self.github_updater.get_update_status()
-            return status.get('needs_update', False)
+            if status.get('needs_update', False):
+                print("📦 Updates found! Downloading to temporary location...")
+                update_info = self.github_updater.auto_download_update()
+                return update_info
+            return None
         except Exception as e:
             print(f"❌ Failed to check for updates: {e}")
-            return False
+            return None
     
-    def _handle_updates_available(self):
+    def _handle_updates_available(self, update_info):
         """
-        Handle case when updates are available
+        Handle case when updates are available and already downloaded
         
         Description:
-            Manages the workflow when remote updates are detected, prompting user
-            for confirmation and executing the update process if approved.
+            Manages the workflow when remote updates are detected and downloaded.
+            Shows changes to user and prompts for confirmation to apply the update.
         
         Input:
-            None
+            update_info (dict): Information about the downloaded update including temp files and changes
         
         Output:
             None (may update self.active_file)
         """
-        print("\n📋 File updates found!")
+        print("\n📋 File updates have been downloaded!")
         
-        # Ask user if they want to update
-        choice = self._get_user_choice("Do you want to execute the update?", ["Yes", "No"])
+        # Display changes if available
+        if update_info and update_info.get('changes'):
+            print("\n📊 Changes detected:")
+            self._display_update_changes(update_info['changes'])
+        
+        # Ask user if they want to apply the update
+        choice = self._get_user_choice("Do you want to apply these updates?", ["Yes", "No"])
         
         if choice == "Yes":
-            print("\n🔄 Executing update...")
-            success = self.github_updater.check_and_update(show_changes=True)
+            print("\n🔄 Applying update...")
+            success = self.github_updater.apply_downloaded_update(update_info)
             if success:
                 # Find the updated JSON file
                 self.active_file = self._find_latest_json_file()
-                print("✅ Update completed!")
+                print("✅ Update applied successfully!")
             else:
-                print("❌ Update failed")
+                print("❌ Failed to apply update")
                 self._handle_update_failed()
         else:
-            print("\n❌ User chose not to update")
+            print("\n❌ User chose not to apply update")
+            # Clean up temporary files
+            self.github_updater.cleanup_temp_update(update_info)
             self._handle_no_update_choice()
+    
+    def _display_update_changes(self, changes):
+        """
+        Display update changes to user using change logger
+        
+        Description:
+            Shows a summary of changes detected in the update using the change logger.
+        
+        Input:
+            changes (dict): Changes dictionary from comparison
+        
+        Output:
+            None (prints information to console)
+        """
+        if not changes:
+            print("  No detailed changes available")
+            return
+        
+        # Use change logger to display changes
+        from .change_logger import ChangeLogger
+        logger = ChangeLogger()
+        logger.display_change_summary(changes)
+        
+        # Show detailed changes with limit
+        if changes.get('has_changes'):
+            logger.display_detailed_changes(changes, limit=3)
     
     def _handle_no_updates(self):
         """
@@ -138,7 +174,7 @@ class SBOWorkflowManager:
         
         Description:
             Manages the workflow when no remote updates are found,
-            using the existing local file or handling missing files.
+            giving user options to upload their own file or use current version.
         
         Input:
             None
@@ -148,9 +184,13 @@ class SBOWorkflowManager:
         """
         print("✅ No updates found")
         
-        # Use current version
-        self.active_file = self._find_latest_json_file()
-        if not self.active_file:
+        # Check if we have existing files
+        existing_file = self._find_latest_json_file()
+        if existing_file:
+            print(f"📁 Current version available: {existing_file}")
+            # Give user choice to upload their own file or use current version
+            self._handle_no_update_choice()
+        else:
             print("⚠️  No existing JSON file found")
             self._handle_no_existing_file()
     
@@ -217,7 +257,12 @@ class SBOWorkflowManager:
             self._handle_file_upload()
         else:
             print("\n🔄 Trying to download latest file...")
-            success = self.github_updater.check_and_update(show_changes=True)
+            # Try to download and apply update
+            update_info = self.github_updater.auto_download_update()
+            if update_info:
+                success = self.github_updater.apply_downloaded_update(update_info)
+            else:
+                success = False
             if success:
                 self.active_file = self._find_latest_json_file()
                 print("✅ Download completed!")

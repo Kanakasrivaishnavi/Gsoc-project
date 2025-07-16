@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-07-08T03:35:35.354341",
+  "timestamp": "2025-07-16T12:00:04.261331",
   "old_version": null,
   "new_version": {
     "sha": "2143b2973f8912db9d4324a4fe543aabcd8f8ba7",
@@ -26,7 +26,7 @@
         {
           "obo_id": "SBO:0000178",
           "label": "cleavage",
-          "description": "No description",
+          "description": "Rupture of a covalent bond resulting in the conversion of one physical entity into several physical entities or into a physical entity of a different topological class.",
           "parents": [
             {
               "parent_id": "SBO:0000182",
@@ -43,7 +43,7 @@
           },
           "old_values": {
             "label": "cleavage",
-            "description": "No description",
+            "description": "Rupture of a covalent bond resulting in the conversion of one physical entity into several physical entities.",
             "parents": [
               {
                 "parent_id": "SBO:0000182",

@@ -3,7 +3,10 @@ import json
 import shutil
 import glob
 from datetime import datetime
-from github_file_updater import parse_obo_file, convert_json_to_obo, validate_roundtrip_conversion
+from .config import Config
+from .obo_parser import OBOFileParser
+from .file_converter import FileConverter
+from .file_validator import FileValidator
 
 
 class UserFileProcessor:
@@ -15,7 +18,7 @@ class UserFileProcessor:
         supporting both JSON and OBO formats with comprehensive validation and error handling.
     """
     
-    def __init__(self):
+    def __init__(self, config):
         """
         Initialize User File Processor
         
@@ -24,12 +27,19 @@ class UserFileProcessor:
             and cleans up any old files to maintain a clean working environment.
         
         Input:
-            None
+            config: Configuration object
         
         Output:
             None (constructor)
         """
         self.processed_files = []
+        
+        # Initialize components
+        self.config = config
+        self.obo_parser = OBOFileParser(self.config)
+        self.file_converter = FileConverter(self.config)
+        self.file_validator = FileValidator()
+        
         # Use SBO_OBO_Files/customerfile under the current script directory
         script_dir = os.path.dirname(os.path.abspath(__file__))
         sbo_obo_files_dir = os.path.join(script_dir, 'SBO_OBO_Files')
@@ -143,7 +153,7 @@ class UserFileProcessor:
             
             # Step 1: Parse OBO file and convert to JSON
             print("1️⃣ Parsing OBO file...")
-            data = parse_obo_file(obo_file)
+            data = self.obo_parser.parse_obo_file(obo_file)
             
             # Save as JSON
             with open(json_file, 'w', encoding='utf-8') as f:
@@ -162,12 +172,12 @@ class UserFileProcessor:
             
             # Step 3: JSON -> OBO roundtrip conversion validation
             print("3️⃣ Performing roundtrip conversion validation...")
-            convert_json_to_obo(json_file, converted_obo_file)
+            self.file_converter.convert_json_to_obo(json_file, converted_obo_file)
             print(f"✅ Converted OBO file saved: {converted_obo_file}")
             
             # Step 4: Validate roundtrip conversion
             print("4️⃣ Validating roundtrip conversion result...")
-            roundtrip_success = validate_roundtrip_conversion(obo_file, converted_obo_file)
+            roundtrip_success = self.file_validator.validate_roundtrip_conversion(obo_file, converted_obo_file)
             
             if not roundtrip_success:
                 self._cleanup_temp_files([json_file, converted_obo_file])

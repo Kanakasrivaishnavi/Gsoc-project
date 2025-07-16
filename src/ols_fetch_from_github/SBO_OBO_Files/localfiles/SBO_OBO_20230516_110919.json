@@ -2162,7 +2162,7 @@
     {
       "id": "SBO:0000178",
       "name": "cleavage",
-      "comment": "Rupture of a covalent bond resulting in the conversion of one physical entity into several physical entities.",
+      "comment": "Rupture of a covalent bond resulting in the conversion of one physical entity into several physical entities or into a physical entity of a different topological class.",
       "is_a": [
         {
           "id": "SBO:0000182",

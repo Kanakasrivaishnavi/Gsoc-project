@@ -60,7 +60,7 @@ is_a: SBO:0000004 ! modelling framework
 [Term]
 id: SBO:0000009
 name: kinetic constant
-comment: Synonym: reaction rate constant
+comment: Synonym: reaction rate constant 
 is_a: SBO:0000002 ! quantitative systems description parameter
 
 [Term]
@@ -1178,7 +1178,7 @@ is_a: SBO:0000176 ! biochemical reaction
 [Term]
 id: SBO:0000178
 name: cleavage
-comment: Rupture of a covalent bond resulting in the conversion of one physical entity into several physical entities.
+comment: Rupture of a covalent bond resulting in the conversion of one physical entity into several physical entities or into a physical entity of a different topological class.
 is_a: SBO:0000182 ! conversion
 
 [Term]
