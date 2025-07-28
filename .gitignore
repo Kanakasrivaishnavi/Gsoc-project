@@ -146,3 +146,4 @@ testSQL.py
 /dist/
 /static/
 /templates/
+.idea/
